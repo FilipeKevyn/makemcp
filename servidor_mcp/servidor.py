@@ -37,8 +37,6 @@ if not logger.handlers:
     logger.setLevel(logging.INFO)
     logger.propagate = False
 
-# O ``httpx`` também loga cada requisição HTTP em INFO; aqui queremos destacar
-# apenas as chamadas de tool, então baixamos o nível dele.
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 mcp = MCPServer(
@@ -65,34 +63,22 @@ mcp = MCPServer(
     )
 )
 async def tarefas_criar(titulo: str, descricao: str = "") -> dict[str, Any]:
-    """Cria uma nova tarefa e devolve a tarefa criada, já com o id.
-
-    Exemplos de uso:
-    - "crie uma tarefa chamada Comprar leite" -> titulo="Comprar leite"
-    - "crie a tarefa Comprar leite com descrição dois litros" ->
-      titulo="Comprar leite", descricao="dois litros"
-
-    Erros: título vazio é rejeitado pela API (422) e vira um erro amigável.
-    """
-    logger.info("tool tarefas_criar chamada com %s", {"titulo": titulo})
-    return await cliente_api.requisitar(
-        "POST", "/tarefas", json={"titulo": titulo, "descricao": descricao}
-    )
+    return {}
 
 
-@mcp.tool(
-    title="Listar tarefas",
-    annotations=ToolAnnotations(read_only_hint=True, open_world_hint=False),
-)
-async def tarefas_listar() -> list[dict[str, Any]]:
-    """Lista todas as tarefas, em ordem de criação.
+# @mcp.tool(
+#     title="Listar tarefas",
+#     annotations=ToolAnnotations(read_only_hint=True, open_world_hint=False),
+# )
+# async def tarefas_listar() -> list[dict[str, Any]]:
+#     """Lista todas as tarefas, em ordem de criação.
 
-    Use quando o usuário pedir "liste as tarefas" ou "o que tenho para fazer".
-    Devolve uma lista (possivelmente vazia) de tarefas com id, titulo,
-    descricao e concluido.
-    """
-    logger.info("tool tarefas_listar chamada")
-    return await cliente_api.requisitar("GET", "/tarefas")
+#     Use quando o usuário pedir "liste as tarefas" ou "o que tenho para fazer".
+#     Devolve uma lista (possivelmente vazia) de tarefas com id, titulo,
+#     descricao e concluido.
+#     """
+#     logger.info("tool tarefas_listar chamada")
+#     return await cliente_api.requisitar("GET", "/tarefas")
 
 
 @mcp.tool(
@@ -100,14 +86,7 @@ async def tarefas_listar() -> list[dict[str, Any]]:
     annotations=ToolAnnotations(read_only_hint=True, open_world_hint=False),
 )
 async def tarefas_obter(id: int) -> dict[str, Any]:
-    """Devolve uma tarefa específica pelo seu id.
-
-    Exemplo de uso: "mostre a tarefa 2" -> id=2.
-    Erros: se a tarefa não existir, retorna um erro amigável ("Tarefa N não
-    encontrada").
-    """
-    logger.info("tool tarefas_obter chamada com %s", {"id": id})
-    return await cliente_api.requisitar("GET", f"/tarefas/{id}", tarefa_id=id)
+    return {}
 
 
 @mcp.tool(
@@ -124,66 +103,27 @@ async def tarefas_atualizar(
     titulo: str | None = None,
     descricao: str | None = None,
 ) -> dict[str, Any]:
-    """Atualiza parcialmente uma tarefa: título e/ou descrição.
-
-    Informe ao menos um dos campos; o campo omitido permanece como estava.
-    Exemplos de uso:
-    - "atualize o título da tarefa 2 para Comprar pão" -> id=2,
-      titulo="Comprar pão"
-    - "mude a descrição da tarefa 2 para dois litros" -> id=2,
-      descricao="dois litros"
-
-    Erros: id inexistente e payload sem nenhum campo viram erros amigáveis.
-    """
-    campos: dict[str, Any] = {}
-    if titulo is not None:
-        campos["titulo"] = titulo
-    if descricao is not None:
-        campos["descricao"] = descricao
-    logger.info("tool tarefas_atualizar chamada com %s", {"id": id, **campos})
-    return await cliente_api.requisitar(
-        "PATCH", f"/tarefas/{id}", json=campos, tarefa_id=id
-    )
+    return {}
 
 
 @mcp.tool(
-    title="Concluir ou desmarcar tarefa",
+    title="...",
     annotations=ToolAnnotations(
         read_only_hint=False,
         destructive_hint=False,
-        # Sem ``concluido`` a tool alterna o estado, então repetir a mesma
-        # chamada pode mudar o resultado — por isso não é idempotente.
         idempotent_hint=False,
         open_world_hint=False,
     ),
 )
-async def tarefas_concluir(
+async def tarefas_concluir_ou_desmarcar(
     id: int,
     concluido: bool | None = None,
 ) -> dict[str, Any]:
-    """Marca uma tarefa como concluída, desmarca ou alterna o estado.
-
-    Um único endpoint serve aos dois usos:
-    - "conclua a tarefa 2" / "marque a tarefa 2 como concluída" -> id=2,
-      concluido=True
-    - "desmarque a tarefa 2" -> id=2, concluido=False
-    - quando ``concluido`` é omitido, o estado atual é **alternado**
-      (``true`` vira ``false`` e vice-versa) -> id=2
-
-    Devolve a tarefa com o novo valor de ``concluido``. Erros: id inexistente
-    retorna "Tarefa N não encontrada".
-    """
-    corpo: dict[str, Any] = {}
-    if concluido is not None:
-        corpo["concluido"] = concluido
-    logger.info("tool tarefas_concluir chamada com %s", {"id": id, **corpo})
-    return await cliente_api.requisitar(
-        "PATCH", f"/tarefas/{id}/concluido", json=corpo, tarefa_id=id
-    )
+    return {}
 
 
 @mcp.tool(
-    title="Remover tarefa",
+    title="...",
     annotations=ToolAnnotations(
         read_only_hint=False,
         destructive_hint=True,
@@ -192,14 +132,7 @@ async def tarefas_concluir(
     ),
 )
 async def tarefas_remover(id: int) -> dict[str, Any]:
-    """Remove uma tarefa pelo id.
-
-    Exemplo de uso: "remova a tarefa 3" -> id=3.
-    Erros: remover um id inexistente retorna "Tarefa N não encontrada".
-    """
-    logger.info("tool tarefas_remover chamada com %s", {"id": id})
-    await cliente_api.requisitar("DELETE", f"/tarefas/{id}", tarefa_id=id)
-    return {"id": id, "removido": True}
+    return {}
 
 
 def main() -> None:
